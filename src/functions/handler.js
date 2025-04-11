@@ -9,7 +9,7 @@ module.exports.uploadFn = async (event) => {
   try {
     if (event.httpMethod === "GET") {
       await bucketService.checkAndCreateBucket(awsConfig.bucketName);
-      await sendMail(`Server passed the health check`, 'kaushiklove2001@gmail.com', 'Subject');
+      await sendMail(`Server passed the health check`, process.env.USER_MAIL_ID, 'Status Logs');
       return {
         statusCode: 200,
         body: JSON.stringify({ message: "Server is up and running!" }),
@@ -18,7 +18,7 @@ module.exports.uploadFn = async (event) => {
 
     if (event.httpMethod === "POST") {
       const preSignedUrl = await awsServices.handleS3Uploading(event);
-      await sendMail(`Image has been successfully uploaded. Original-URL: ${preSignedUrl.original}, Processed-URL: ${preSignedUrl.edited}`, 'kaushiklove2001@gmail.com', 'Subject');
+      await sendMail(`Image has been successfully uploaded. Original-URL: ${preSignedUrl.original}, Processed-URL: ${preSignedUrl.edited}`, process.env.USER_MAIL_ID, 'Status Logs');
       return {
         statusCode: 200,
         body: JSON.stringify({
@@ -34,11 +34,11 @@ module.exports.uploadFn = async (event) => {
     };
   } catch (error) {
     const errorLogParam = {
-      UserID: 'User123',
+      UserID: process.env.USER_ID,
       error: error.message
     }
     await addItemToLogDynamoTable(errorLogParam, awsConfig.tableName);
-    await sendMail(`Some error occurred while processing and uploading. Error: ${error.message}`, 'Kaushiklove2001@gmail.com', 'Subject');
+    await sendMail(`Some error occurred while processing and uploading. Error: ${error.message}`, process.env.USER_MAIL_ID, 'Status Logs');
     return {
       statusCode: 500,
       body: JSON.stringify({

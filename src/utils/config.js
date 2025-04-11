@@ -33,7 +33,7 @@ const resizeImage = async (file) => {
 const getBasicFileMetaData = (file) => {
   const { originalname, contentType } = file;
   return {
-    UserID: "User123",
+    UserID: process.env.USER_ID,
     OriginalFileName: originalname,
     ContentType: contentType,
   };
