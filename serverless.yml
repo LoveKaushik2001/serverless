@@ -1,0 +1,71 @@
+service: upload-to-s3-from-lambda
+frameworkVersion: "4"
+
+custom:
+  bucketName: love-file-upload
+  tableName: log-table
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-south-1
+  profile: love
+  stage: ${opt:stage, 'dev'}
+  environment:
+    REGION: ${env:REGION, 'ap-south-1'}
+    BUCKET_NAME: ${env:BUCKET_NAME, 'love-file-upload'}
+    TABLE_NAME: ${env:TABLE_NAME, 'log-table'}
+    AUTH_MAIL_ID: ${env:AUTH_MAIL_ID}
+    AUTH_PASSWORD: ${env:AUTH_PASSWORD}
+    MAILING_SERVICE: ${env:MAILING_SERVICE, 'gmail'}
+    ORIGINAL_FOLDER_STRUCT: ${env:ORIGINAL_FOLDER_STRUCT, 'original/'}
+    PROCESSED_FOLDER_STRUCT: ${env:PROCESSED_FOLDER_STRUCT, 'processed/'}
+    IS_OFFLINE: ${env:IS_OFFLINE, 'false'}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: 
+            - s3:*
+            - dynamodb:*
+            - ses:*
+          Resource: '*'
+
+plugins:
+  - serverless-offline
+functions:
+  uploadImage:
+    handler: ./src/functions/handler.uploadFn
+    timeout: 60
+    events:
+      - http:
+          path: /upload
+          method: get
+          cors: true
+      - http:
+          path: /upload
+          method: post
+          cors: true
+
+resources:
+ Resources:
+  UploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: ${self:custom.bucketName}
+  DynamoDbTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:custom.tableName}
+      AttributeDefinitions:
+        - AttributeName: UserID
+          AttributeType: S
+        - AttributeName: TimeStamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: UserID
+          KeyType: HASH
+        - AttributeName: TimeStamp
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
